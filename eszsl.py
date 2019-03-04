@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt #importing plotting module
 import itertools
 import warnings
 
-def plotit(X,Y=None,clf=None, markers = ('s','o'), hold = False, transform = None):
+def plotit(X,Y=None,clf=None, markers = ('.','o'), hold = False, transform = None,**kwargs):
     """
     Just a function for showing a data scatter plot and classification boundary
     of a classifier clf
     """
-    if X.shape[1]!=2:
+    if clf is not None and X.shape[1]!=2:
         warnings.warn("Data Dimensionality is not 2. Unable to plot.")
         return
     
@@ -30,7 +30,8 @@ def plotit(X,Y=None,clf=None, markers = ('s','o'), hold = False, transform = Non
         t = np.array(list(itertools.product(x,y)))
         if transform is not None:
             t = transform(t)
-        z = clf(t)
+        z = clf(t,**kwargs)
+        
         z = np.reshape(z,(npts,npts)).T        
         extent = [minx,maxx,miny,maxy]
         plt.contour(x,y,z,[-1+eps,0,1-eps],linewidths = [2],colors=('b','k','r'),extent=extent, label='f(x)=0')
@@ -39,9 +40,9 @@ def plotit(X,Y=None,clf=None, markers = ('s','o'), hold = False, transform = Non
         plt.axis([minx,maxx,miny,maxy])
     
     if Y is not None:
-        
-        plt.scatter(X[Y==1,0],X[Y==1,1],marker = markers[0], c = 'y', s = 30)
-        plt.scatter(X[Y==-1,0],X[Y==-1,1],marker = markers[1],c = 'c', s = 30)
+        for y in set(Y):
+            plt.scatter(X[Y==y,0],X[Y==y,1], marker = markers[0],c = np.random.rand(1,3), s = 30)
+        #plt.scatter(X[Y==-1,0],X[Y==-1,1],marker = markers[1],c = 'c', s = 30)
         plt.xlabel('$x_1$')
         plt.ylabel('$x_2$')        
          
@@ -142,13 +143,14 @@ class ESZSL:
         
         """
         if S is None:
-            S = np.eye(clf.A.shape[1])[-1,:]
+            S = np.eye(clf.A.shape[1])[0,:]
         if self.kernel=='precomputed':
             K = X
         else:
             K = self.kernel(X,self.X,**self.kwargs)
         Z = np.dot(np.dot(S,self.A.T),K.T).T
         return Z
+    
         
 if __name__ == '__main__':
     plt.close("all")    
@@ -164,16 +166,19 @@ if __name__ == '__main__':
     Y = -1*np.ones((Xtr.shape[0],2))
     for i,v in enumerate(np.array((Ytr+1)/2,dtype=np.int)):
         Y[i,v]=1
-    S = np.eye(2)        
+    S = 5*np.eye(2,2)
+    
+    
+         
     #%% Training and evaluation, plotting
-    clf = ESZSL(sigmap = 0.1, lambdap = 1.0, kernel = poly, degree = 3)
+    clf = ESZSL(sigmap = 0.1, lambdap = 1.0, kernel = poly, degree = 2)
     clf.fit(Xtr,Y,S)
     Z = clf.decision_function(Xtr,S)[:,1]
     print("Train accuracy",accuracy(Ytr,2*(Z>0)-1))
     Z = clf.decision_function(Xtt,S)[:,1]
     print("Test accuracy",accuracy(Ytt,2*(Z>0)-1))
     plotit(Xtr,Ytr,clf=clf.decision_function)    
-    #%% Training and evaluation for precomputed matrix
+#%% Training and evaluation for precomputed matrix
     K = (np.dot(Xtr,Xtr.T)+1)**2
     clf = ESZSL(sigmap = 0.1, lambdap = 0.1, kernel = 'precomputed')
     clf.fit(K,Y,S)
@@ -181,4 +186,52 @@ if __name__ == '__main__':
     print("Train accuracy",accuracy(Ytr,2*(Z>0)-1))
     Z = clf.decision_function((np.dot(Xtt,Xtr.T)+1)**2,S)[:,1]
     print("Test accuracy",accuracy(Ytt,2*(Z>0)-1))
+#    
+#%% Generalized zero shot learning
+    class dataGenerator:
+        def __init__(self,a=100,d=2):
+            self.a = a
+            self.d = d
+            self.V = np.random.randn(self.a,self.d)
+        def getAttributes(self,z = 3):
+            return np.random.binomial(1,0.5,(z,self.a))        
+        def getData(self,S, n = 50, useOldNormalization = False):
+            z,a = S.shape
+            assert a==self.a
+            d = self.d
+            C = np.dot(S,self.V)
+            X = []
+            Y = -1*np.ones((n*z,z))
+            for i in range(z):
+                X.append(np.random.randn(n,d)+C[i,:])
+                Y[i*n:(i+1)*n,i]=1.0
+            X = np.vstack(X)
+            if not useOldNormalization:
+                self.mean = np.mean(X,axis=0)
+                self.std = np.std(X,axis=0)
+            X = (X-self.mean)/self.std
+            return X,Y
+            
+    def MCAccuracy(Y,Z):
+        return np.mean(np.argmax(Z,axis=1)==np.argmax(Y,axis=1))
     
+    
+    a = 100
+    d = 10
+    dgen = dataGenerator(a,d)
+    S = dgen.getAttributes(z=100)
+    X,Y = dgen.getData(S, n = 50)
+    clf = ESZSL(sigmap = 1e-1, lambdap = 1e1, kernel = poly, degree = 1)
+    clf.fit(X,Y,S)
+    Z = clf.decision_function(X,S)
+    print("Train Accuracy",MCAccuracy(Y,Z))
+    S1 = S
+    X1,Y1 = dgen.getData(S1, n = 50, useOldNormalization = True)
+    Z1 = clf.decision_function(X1,S1)
+    print("Test Accuracy",MCAccuracy(Y1,Z1))
+    S2 = dgen.getAttributes(z=3)
+    X2,Y2 = dgen.getData(S2, n = 50, useOldNormalization = True)
+    Z2 = clf.decision_function(X2,S2)
+    print("ZSL Accuracy",MCAccuracy(Y2,Z2))
+    plt.close('all')
+    plotit(X,np.argmax(Y,axis=1));plotit(X2,np.argmax(Y2,axis=1),markers=('^','o'))
