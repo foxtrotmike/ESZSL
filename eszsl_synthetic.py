@@ -6,6 +6,7 @@ ESZSL Synthetic Data Experiments
 """
 from eszsl import *
 from plotit import plotit
+import matplotlib.pyplot as plt
 class dataGenerator:
     def __init__(self,a=100,d=2):
         self.a = a
