@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  7 11:26:04 2019
-
+ESZSL SUN Data Results
+Requires mat files in ddir
+Perfect Reconstruction of results in the original paper
 @author: afsar
 """
 
