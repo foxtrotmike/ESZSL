@@ -4,6 +4,9 @@ Created on Thu Mar  7 11:26:04 2019
 ESZSL SUN Data Results
 Requires mat files in ddir
 Perfect Reconstruction of results in the original paper
+Download the data mat files from the URL below and put them in the folder "matsun"
+URL: https://drive.google.com/open?id=1-Y-KbAu_YVz7tXbbYHztFyDXOwrLrcWx
+
 @author: afsar
 """
 
