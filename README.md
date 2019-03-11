@@ -7,3 +7,5 @@ Python Implementation of Embarrassingly Simple Zero Shot Learning
     
     The code generates the same results as in the original paper for the SUN dataset.
     No warranties. Under Creative Commons License.
+
+You can download the data for reconstructing the results for SUN dataset from: https://drive.google.com/open?id=1-Y-KbAu_YVz7tXbbYHztFyDXOwrLrcWx
