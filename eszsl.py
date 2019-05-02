@@ -138,7 +138,7 @@ if __name__ == '__main__':
     #%% Training and evaluation, plotting
     #from sklearn.metrics.pairwise import polynomial_kernel as poly #use builtin-kernel functions from sk-learn
     #from sklearn.metrics.pairwise import rbf_kernel as rbf
-    clf = ESZSL(sigmap = 0.1, lambdap = 0.05, kernel = polynomial_kernel, degree = 1)
+    clf = ESZSL(sigmap = 0.1, lambdap = 0.05, kernel = poly, degree = 1)
     clf.fit(Xtr,Y,S)
     Z = clf.decision_function(Xtr,S)[:,1]
     print("Train accuracy",accuracy(Ytr,clf.predict(Xtr,S)))
